@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Forge — AI Article Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0C0E12; --bg2: #13161D; --bg3: #1A1E28; --bg4: #222835;
+  --border: #2A3040; --border2: #3A4258;
+  --text: #D4D8E4; --text2: #8B92A8; --text3: #5C6480;
+  --accent: #C8A46E; --accent2: #E8C88E; --accent-dim: #8A7040;
+  --green: #6ECE7A; --green-dim: #2A4030;
+  --red: #E86A6A; --red-dim: #402A2A;
+  --blue: #6AA8E8; --blue-dim: #2A3040;
+  --warn: #E8B86A; --warn-dim: #40382A;
+  --radius: 10px; --radius-sm: 6px;
+  --mono: 'DM Mono', monospace; --serif: 'Source Serif 4', serif; --sans: 'Outfit', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; }
+input, textarea, button, select { font-family: inherit; }
+
+/* Header */
+.header { padding: 28px 24px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, #10131A 0%, var(--bg) 100%); }
+.header-inner { max-width: 920px; margin: 0 auto; }
+.header-badge { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+.header-title { font-family: var(--serif); font-size: 26px; font-weight: 700; color: #F0F2F8; letter-spacing: -0.02em; }
+.header-sub { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+
+/* Nav */
+.nav { border-bottom: 1px solid var(--border); background: var(--bg2); position: sticky; top: 0; z-index: 20; }
+.nav-inner { max-width: 920px; margin: 0 auto; display: flex; overflow-x: auto; scrollbar-width: none; }
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-btn { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); background: none; border: none; padding: 13px 18px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; letter-spacing: 0.02em; }
+.nav-btn:hover { color: var(--text2); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Content */
+.content { max-width: 920px; margin: 0 auto; padding: 28px 24px 60px; width: 100%; }
+
+/* API Key Bar */
+.api-key-bar { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; transition: border-color 0.2s; }
+.api-key-bar.saved { border-color: #3A5A40; }
+.api-key-label { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em; white-space: nowrap; font-weight: 500; }
+.api-key-input { flex: 1; min-width: 180px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 8px 12px; outline: none; }
+.api-key-input:focus { border-color: var(--accent-dim); }
+.key-saved-badge { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.06em; }
+
+/* Fields */
+.field-group { margin-bottom: 18px; }
+.field-label { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+.field-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.15s; }
+.field-input:focus { border-color: var(--accent-dim); }
+.field-input::placeholder { color: var(--text3); }
+textarea.field-input { resize: vertical; min-height: 68px; line-height: 1.55; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+.field-input-sm { width: 70px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 6px 10px; outline: none; text-align: center; }
+.field-input-sm:focus { border-color: var(--accent-dim); }
+
+/* Section Cards */
+.section-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+.section-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-card-num { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 500; background: var(--bg); padding: 3px 10px; border-radius: 20px; }
+.section-card-remove { background: none; border: 1px solid var(--border); color: var(--text3); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.section-card-remove:hover { border-color: var(--red); color: var(--red); }
+
+/* H3 Cards */
+.h3-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+.h3-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.h3-heading-input { flex: 1; min-width: 140px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 13px; padding: 8px 12px; outline: none; }
+.h3-heading-input:focus { border-color: var(--accent-dim); }
+.h3-heading-input::placeholder { color: var(--text3); }
+.h3-meta { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--text3); white-space: nowrap; }
+.h3-remove { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; }
+.h3-remove:hover { color: var(--red); }
+.format-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+.format-tag-h2 { background: #2A3548; color: var(--blue); border: 1px solid #3A4A60; }
+.format-tag-h3 { background: #2A3840; color: #6EC8A0; border: 1px solid #3A5A4A; }
+.word-summary-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.word-chip b { color: var(--accent2); font-weight: 600; }
+
+/* Buttons */
+.btn { font-family: var(--mono); font-size: 12px; font-weight: 500; border: none; border-radius: var(--radius-sm); padding: 10px 20px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em; }
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { background: var(--accent-dim); cursor: default; opacity: 0.6; }
+.btn-secondary { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+.btn-ghost { background: none; color: var(--accent); padding: 10px 16px; border: none; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+.btn-ghost:hover { color: var(--accent2); }
+.btn-sm { padding: 6px 14px; font-size: 11px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Progress */
+.progress-bar-bg { background: var(--bg3); border-radius: 20px; height: 8px; overflow: hidden; margin: 16px 0; border: 1px solid var(--border); }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 20px; transition: width 0.5s ease; }
+
+/* Log */
+.log-container { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; max-height: 360px; overflow-y: auto; font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+@keyframes logFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.log-entry { animation: logFade 0.3s ease; }
+
+/* Article output */
+.article-output { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; font-family: var(--serif); font-size: 15px; line-height: 1.75; color: var(--text); max-height: 600px; overflow-y: auto; }
+.article-output h1 { font-size: 24px; margin-bottom: 20px; color: #F0F2F8; font-family: var(--serif); }
+.article-output h2 { font-size: 19px; margin: 24px 0 12px; color: var(--accent2); font-family: var(--serif); }
+.article-output h3 { font-size: 16px; margin: 18px 0 8px; color: var(--blue); font-family: var(--serif); }
+.article-output p { margin: 8px 0; }
+.article-output hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.article-output ul { margin: 10px 0 10px 24px; list-style-type: disc; }
+.article-output li { margin-bottom: 6px; line-height: 1.6; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
+.stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.stat-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-value { font-family: var(--serif); font-size: 22px; font-weight: 700; color: #F0F2F8; }
+.section-result { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 13px; }
+.section-result-pass { background: var(--green-dim); border: 1px solid #3A5A40; }
+.section-result-warn { background: var(--warn-dim); border: 1px solid #5A4A2A; }
+
+/* Error */
+.error-box { background: var(--red-dim); border: 1px solid #5A3030; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--red); display: none; }
+.error-box.visible { display: block; }
+
+/* History */
+.history-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.15s; }
+.history-card:hover { border-color: var(--accent-dim); }
+.history-title { font-family: var(--serif); font-size: 16px; font-weight: 600; color: #F0F2F8; margin-bottom: 6px; }
+.history-meta { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.history-meta-accent { color: var(--accent); }
+.history-actions { display: flex; gap: 8px; margin-top: 12px; }
+.history-empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+
+/* Views */
+.view { display: none; }
+.view.active { display: block; }
+.help-text { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-badge">Content Forge</div>
+    <div class="header-title">AI Article Generation Agent</div>
+    <div class="header-sub">Section-by-section long-form content pipeline powered by Claude API. Configure, generate with real-time progress, and download.</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-inner" id="nav-inner">
+    <button class="nav-btn active" data-view="configure">1 . Configure</button>
+    <button class="nav-btn" data-view="generate">2 . Generate</button>
+    <button class="nav-btn" data-view="output">3 . Output</button>
+    <button class="nav-btn" data-view="history">History</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- API KEY BAR -->
+  <div class="api-key-bar" id="apiKeyBar">
+    <span class="api-key-label">API KEY</span>
+    <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-api03-...">
+    <button class="btn btn-secondary" id="toggleKeyBtn" style="padding:8px 12px;font-size:11px">Show</button>
+    <button class="btn btn-secondary" id="saveKeyBtn" style="padding:8px 12px;font-size:11px;border-color:var(--green);color:var(--green)">Save</button>
+    <button class="btn btn-secondary" id="clearKeyBtn" style="padding:8px 12px;font-size:11px;border-color:#5A3030;color:var(--red);display:none">Clear</button>
+    <span class="key-saved-badge" id="keySavedBadge" style="display:none">&#10003; Saved</span>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- ═══ CONFIGURE VIEW ═══ -->
+  <div class="view active" id="view-configure">
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Topic</label><input class="field-input" id="inp-topic" placeholder="Main topic..."></div>
+      <div class="field-group"><label class="field-label">Article Title</label><input class="field-input" id="inp-title" placeholder="Full title..."></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Target Audience</label><input class="field-input" id="inp-audience" placeholder="Who is this for?"></div>
+      <div class="field-group"><label class="field-label">Search Intent</label><input class="field-input" id="inp-intent" placeholder="What are they looking for?"></div>
+    </div>
+    <div class="field-group"><label class="field-label">Content Brief</label><textarea class="field-input" id="inp-brief" placeholder="Scope and key points..." rows="3"></textarea></div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:6px">
+      <div>
+        <label class="field-label" style="margin-bottom:0">Outline Sections</label>
+        <div class="help-text" style="margin-top:2px">Total: <span id="totalWordsBadge" style="font-weight:600;font-family:var(--mono)">0</span> words</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="addSection()">+ Section</button>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:14px;margin-top:6px">
+      <span class="format-tag format-tag-h2">H2 Paragraph only</span>
+      <span class="format-tag format-tag-h3">H3 Paragraph + Bullets</span>
+    </div>
+
+    <div id="outlineContainer"></div>
+
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-primary" id="generateBtn" style="padding:12px 28px;font-size:13px" onclick="startGeneration()">Generate Article</button>
+      <button class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+      <button class="btn btn-ghost" style="color:var(--text3)" onclick="clearForm()">Clear</button>
+    </div>
+  </div>
+
+  <!-- ═══ GENERATE VIEW ═══ -->
+  <div class="view" id="view-generate">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text2)" id="genStatusLabel">Ready</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="genProgressLabel">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="log-container" id="logContainer"><span style="color:var(--text3)">Waiting...</span></div>
+    <div class="btn-row" style="margin-top:18px" id="genActions"></div>
+  </div>
+
+  <!-- ═══ OUTPUT VIEW ═══ -->
+  <div class="view" id="view-output">
+    <div id="outputContent">
+      <div style="text-align:center;padding:60px;color:var(--text3)">
+        <div style="font-size:36px;margin-bottom:12px">—</div>
+        <div style="font-family:var(--mono);font-size:13px">No article yet.</div>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="switchView('configure')">Configure</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTORY VIEW ═══ -->
+  <div class="view" id="view-history">
+    <div id="historyContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULTS = {
+  MODEL: "claude-sonnet-4-20250514",
+  MAX_TOKENS: 8096,
+  RETRY_ATTEMPTS: 3,
+  RETRY_BASE_DELAY_MS: 2000,
+  MIN_WORD_RATIO: 0.65,
+};
+
+function uid() { return "id-" + Math.random().toString(36).slice(2, 10); }
+function countWords(t) { return t.split(/\s+/).filter(Boolean).length; }
+
+function computeSectionWords(s) {
+  return (s.h2_word_target || 0) + (s.subtopics || []).reduce((sum, st) => sum + (st.word_target || 0), 0);
+}
+function computeTotalWords(outline) {
+  return outline.reduce((sum, s) => sum + computeSectionWords(s), 0);
+}
+
+function validateInput(input) {
+  const errors = [];
+  if (!input.topic?.trim()) errors.push("Topic is required");
+  if (!input.article_title?.trim()) errors.push("Article title is required");
+  if (!input.target_audience?.trim()) errors.push("Target audience is required");
+  if (!input.search_intent?.trim()) errors.push("Search intent is required");
+  if (!input.content_brief?.trim()) errors.push("Content brief is required");
+  if (!input.outline || input.outline.length === 0) {
+    errors.push("At least one section is required");
+  } else {
+    input.outline.forEach((s, i) => {
+      if (!s.section_heading?.trim()) errors.push(`Section ${i+1}: heading required`);
+      if (typeof s.h2_word_target !== "number" || s.h2_word_target < 50) errors.push(`Section ${i+1}: H2 words >= 50`);
+      if (!s.subtopics?.length) errors.push(`Section ${i+1}: needs at least 1 H3`);
+      else s.subtopics.forEach((st, j) => {
+        if (!st.heading?.trim()) errors.push(`S${i+1} H3.${j+1}: heading required`);
+        if (typeof st.word_target !== "number" || st.word_target < 30) errors.push(`S${i+1} H3.${j+1}: words >= 30`);
+      });
+    });
+  }
+  const total = computeTotalWords(input.outline || []);
+  if (total < 2000) errors.push(`Total (${total}) must be >= 2,000`);
+  if (total > 10000) errors.push(`Total (${total}) must be <= 10,000`);
+  return errors;
+}
+
+function buildArticleContext(input) {
+  return `Article Title: ${input.article_title}\n\nTarget Audience: ${input.target_audience}\n\nSearch Intent: ${input.search_intent}\n\nContent Brief: ${input.content_brief}\n\nFull Outline:\n${input.outline.map((s, i) => {
+    const h3list = s.subtopics.map((st, j) => `      ${j+1}. ${st.heading} (${st.word_target}w)`).join("\n");
+    return `  ${i+1}. ${s.section_heading} - H2 intro: ${s.h2_word_target}w\n${h3list}`;
+  }).join("\n")}`;
+}
+
+function buildSectionPrompt(input, section, previousHeadings) {
+  const avoid = previousHeadings.length > 0
+    ? `\n\nSections already written (do NOT repeat ideas):\n${previousHeadings.map((h,i) => `  ${i+1}. ${h}`).join("\n")}`
+    : "";
+  const h3Blocks = section.subtopics.map((st, i) =>
+    `  H3 #${i+1}: "${st.heading}"\n    - Word target: ~${st.word_target} words\n    - Format: Start with one paragraph (~40%), then markdown bullet list "- " (3-6 items, ~60%).`
+  ).join("\n\n");
+
+  return `You are an expert long-form content writer.
+
+${buildArticleContext(input)}
+${avoid}
+
+=== GENERATE THIS SECTION ===
+
+## ${section.section_heading}
+
+-- H2 INTRO (paragraph format ONLY) --
+- Write ~${section.h2_word_target} words as the H2 introduction.
+- Format: Pure paragraph(s). NO bullet points, NO lists.
+
+-- H3 SUBTOPICS (paragraph + bullet points) --
+${h3Blocks}
+
+=== STRICT FORMATTING RULES ===
+1. Start with: ## ${section.section_heading}
+2. H2 intro = flowing paragraph(s) only. No lists.
+3. Each H3 starts with: ### [Heading]
+4. Each H3 MUST have BOTH paragraph AND bullet list.
+5. Professional language for: ${input.target_audience}
+6. No filler. No references to other sections. No article intro/conclusion.
+7. Output ONLY section content.`;
+}
+
+async function callClaude(prompt, { apiKey, model, maxTokens, signal }) {
+  let lastError;
+  for (let attempt = 1; attempt <= DEFAULTS.RETRY_ATTEMPTS; attempt++) {
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["x-api-key"] = apiKey;
+        headers["anthropic-version"] = "2023-06-01";
+        headers["anthropic-dangerous-direct-browser-access"] = "true";
+      }
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers, signal,
+        body: JSON.stringify({
+          model: model || DEFAULTS.MODEL,
+          max_tokens: maxTokens || DEFAULTS.MAX_TOKENS,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      if (res.status === 429 || res.status === 529) {
+        await new Promise(r => setTimeout(r, DEFAULTS.RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1)));
+        lastError = new Error(`API ${res.status}: rate limited`);
+        continue;
+      }
+      if (!res.ok) {
+        let body = ""; try { body = await res.text(); } catch(e) {}
+        throw new Error(`API ${res.status}: ${body.substring(0, 200)}`);
+      }
+      const data = await res.json();
+      const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("\n").trim();
+      if (!text) throw new Error("Empty API response");
+      return text;
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      lastError = err;
+      if (attempt < DEFAULTS.RETRY_ATTEMPTS)
+        await new Promise(r => setTimeout(r, DEFAULTS.RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1)));
+    }
+  }
+  throw lastError;
+}
+
+async function generateArticle(input, options = {}) {
+  const { apiKey, onProgress, signal } = options;
+  const sections = [], prevHeadings = [];
+  for (let i = 0; i < input.outline.length; i++) {
+    const sec = input.outline[i];
+    const target = computeSectionWords(sec);
+    onProgress?.("generating_section", { index: i+1, total: input.outline.length, heading: sec.section_heading, target });
+    const prompt = buildSectionPrompt(input, sec, prevHeadings);
+    let text = await callClaude(prompt, { apiKey, signal });
+    let wc = countWords(text);
+    if (wc < target * DEFAULTS.MIN_WORD_RATIO) {
+      onProgress?.("regenerating", { heading: sec.section_heading, got: wc, target });
+      text = await callClaude(prompt, { apiKey, signal });
+      wc = countWords(text);
+    }
+    sections.push({ heading: sec.section_heading, content: text, wordCount: wc, target });
+    prevHeadings.push(sec.section_heading);
+    onProgress?.("section_complete", { heading: sec.section_heading, wordCount: wc, target });
+  }
+  onProgress?.("assembling");
+  const article = `# ${input.article_title}\n\n` + sections.map(s => s.content).join("\n\n---\n\n");
+  const totalWords = countWords(article);
+  onProgress?.("complete", { totalWords });
+  return { article, sections, totalWords };
+}
+
+function renderMarkdown(text) {
+  if (!text) return "";
+  return text
+    .replace(/^### (.+)$/gm, '</p><h3>$1</h3><p>')
+    .replace(/^## (.+)$/gm, '</p><h2>$1</h2><p>')
+    .replace(/^# (.+)$/gm, '</p><h1>$1</h1><p>')
+    .replace(/^---$/gm, '</p><hr><p>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/((?:<li>[\s\S]*?<\/li>\s*)+)/g, '<ul>$1</ul>')
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXAMPLE DATA
+// ═══════════════════════════════════════════════════════════════
+
+const EXAMPLE = {
+  topic: "Sustainable Software Engineering",
+  article_title: "Green Code: A Practitioner's Guide to Sustainable Software Engineering",
+  target_audience: "Software engineers, tech leads, and engineering managers",
+  search_intent: "Learn actionable techniques for writing energy-efficient code",
+  content_brief: "Guide covering why sustainable engineering matters, measuring carbon emissions, optimization patterns, infrastructure choices, and building a green-code culture.",
+  outline: [
+    { section_heading: "Why Software Has a Carbon Footprint", h2_word_target: 100, subtopics: [
+      { heading: "Data Center Energy Consumption", word_target: 120 },
+      { heading: "Embodied Carbon in Hardware", word_target: 120 },
+      { heading: "The Rebound Effect", word_target: 120 },
+      { heading: "Scope 1/2/3 Emissions in Tech", word_target: 120 },
+    ]},
+    { section_heading: "Measuring Your Code's Impact", h2_word_target: 120, subtopics: [
+      { heading: "Software Carbon Intensity (SCI)", word_target: 130 },
+      { heading: "Energy Profiling Tools", word_target: 130 },
+      { heading: "Cloud Carbon Dashboards", word_target: 130 },
+      { heading: "Benchmarking Methodologies", word_target: 130 },
+    ]},
+    { section_heading: "Optimization Patterns for Green Code", h2_word_target: 120, subtopics: [
+      { heading: "Algorithmic Efficiency as Sustainability", word_target: 150 },
+      { heading: "Lazy Evaluation and Demand-Driven Computation", word_target: 150 },
+      { heading: "Caching Strategies That Reduce Compute", word_target: 150 },
+      { heading: "Database Query Optimization", word_target: 150 },
+    ]},
+    { section_heading: "Infrastructure and Deployment Choices", h2_word_target: 100, subtopics: [
+      { heading: "Region Selection by Carbon Intensity", word_target: 130 },
+      { heading: "Serverless vs Always-On Trade-offs", word_target: 130 },
+      { heading: "Right-Sizing Containers and VMs", word_target: 130 },
+      { heading: "Carbon-Aware Scheduling", word_target: 130 },
+    ]},
+    { section_heading: "Building a Green Engineering Culture", h2_word_target: 100, subtopics: [
+      { heading: "Carbon Budgets in Sprint Planning", word_target: 110 },
+      { heading: "Sustainability Metrics in CI/CD", word_target: 110 },
+      { heading: "Developer Education Programs", word_target: 110 },
+      { heading: "The Business Case for Green Software", word_target: 110 },
+    ]},
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════
+
+let state = {
+  view: "configure",
+  outline: [],
+  status: "idle",
+  logs: [],
+  progress: 0,
+  result: null,
+  history: [],
+  keySaved: false,
+  abortController: null,
+};
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE (localStorage)
+// ═══════════════════════════════════════════════════════════════
+
+function loadSavedKey() {
+  try {
+    const k = localStorage.getItem("content-forge:api-key");
+    if (k) { document.getElementById("apiKeyInput").value = k; state.keySaved = true; updateKeyUI(); }
+  } catch(e) {}
+}
+function saveKey() {
+  const v = document.getElementById("apiKeyInput").value.trim();
+  if (!v) return;
+  try { localStorage.setItem("content-forge:api-key", v); state.keySaved = true; updateKeyUI(); } catch(e) {}
+}
+function clearKey() {
+  try { localStorage.removeItem("content-forge:api-key"); } catch(e) {}
+  document.getElementById("apiKeyInput").value = "";
+  state.keySaved = false;
+  updateKeyUI();
+}
+function updateKeyUI() {
+  const bar = document.getElementById("apiKeyBar");
+  const saveBtn = document.getElementById("saveKeyBtn");
+  const clearBtn = document.getElementById("clearKeyBtn");
+  const badge = document.getElementById("keySavedBadge");
+  if (state.keySaved) {
+    bar.classList.add("saved");
+    saveBtn.style.display = "none";
+    clearBtn.style.display = "";
+    badge.style.display = "";
+  } else {
+    bar.classList.remove("saved");
+    saveBtn.style.display = "";
+    clearBtn.style.display = "none";
+    badge.style.display = "none";
+  }
+}
+function loadHistory() {
+  try {
+    const h = localStorage.getItem("content-forge:history");
+    if (h) state.history = JSON.parse(h);
+  } catch(e) {}
+}
+function saveHistory() {
+  try { localStorage.setItem("content-forge:history", JSON.stringify(state.history.slice(0, 20))); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW SWITCHING
+// ═══════════════════════════════════════════════════════════════
+
+function switchView(id) {
+  state.view = id;
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + id)?.classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.view === id));
+  if (id === "history") renderHistory();
+}
+
+document.getElementById("nav-inner").addEventListener("click", e => {
+  if (e.target.dataset.view) switchView(e.target.dataset.view);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// API KEY EVENTS
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById("toggleKeyBtn").addEventListener("click", () => {
+  const inp = document.getElementById("apiKeyInput");
+  const btn = document.getElementById("toggleKeyBtn");
+  if (inp.type === "password") { inp.type = "text"; btn.textContent = "Hide"; }
+  else { inp.type = "password"; btn.textContent = "Show"; }
+});
+document.getElementById("saveKeyBtn").addEventListener("click", saveKey);
+document.getElementById("clearKeyBtn").addEventListener("click", clearKey);
+document.getElementById("apiKeyInput").addEventListener("input", () => {
+  state.keySaved = false; updateKeyUI();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ERROR
+// ═══════════════════════════════════════════════════════════════
+
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent = msg; box.classList.add("visible");
+}
+function hideError() {
+  document.getElementById("errorBox").classList.remove("visible");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTLINE BUILDER
+// ═══════════════════════════════════════════════════════════════
+
+function addSection(data) {
+  state.outline.push(data || {
+    id: uid(), section_heading: "", h2_word_target: 100,
+    subtopics: [{ id: uid(), heading: "", word_target: 75 }],
+  });
+  renderOutline();
+}
+
+function removeSection(id) {
+  state.outline = state.outline.filter(s => s.id !== id);
+  renderOutline();
+}
+
+function addSubtopic(sid) {
+  const sec = state.outline.find(s => s.id === sid);
+  if (sec) sec.subtopics.push({ id: uid(), heading: "", word_target: 75 });
+  renderOutline();
+}
+
+function removeSubtopic(sid, stid) {
+  const sec = state.outline.find(s => s.id === sid);
+  if (sec) sec.subtopics = sec.subtopics.filter(st => st.id !== stid);
+  renderOutline();
+}
+
+function syncOutlineFromDOM() {
+  state.outline.forEach(sec => {
+    const hEl = document.getElementById(`h2-${sec.id}`);
+    const wEl = document.getElementById(`h2w-${sec.id}`);
+    if (hEl) sec.section_heading = hEl.value;
+    if (wEl) sec.h2_word_target = parseInt(wEl.value) || 0;
+    sec.subtopics.forEach(st => {
+      const shEl = document.getElementById(`h3-${st.id}`);
+      const swEl = document.getElementById(`h3w-${st.id}`);
+      if (shEl) st.heading = shEl.value;
+      if (swEl) st.word_target = parseInt(swEl.value) || 0;
+    });
+  });
+}
+
+function updateTotalWords() {
+  syncOutlineFromDOM();
+  const total = computeTotalWords(state.outline);
+  const badge = document.getElementById("totalWordsBadge");
+  badge.textContent = total.toLocaleString();
+  badge.style.color = (total >= 2000 && total <= 10000) ? "var(--green)" : "var(--red)";
+}
+
+function renderOutline() {
+  const container = document.getElementById("outlineContainer");
+  container.innerHTML = "";
+
+  state.outline.forEach((sec, si) => {
+    const secW = computeSectionWords(sec);
+    const card = document.createElement("div");
+    card.className = "section-card";
+    card.innerHTML = `
+      <div class="section-card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="section-card-num">S${si+1}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${secW}w</span>
+        </div>
+        ${state.outline.length > 1 ? `<button class="section-card-remove" onclick="removeSection('${sec.id}')">×</button>` : ""}
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <label class="field-label" style="font-size:10px;margin-bottom:0">H2 Heading</label>
+            <span class="format-tag format-tag-h2" style="font-size:8px">Paragraph</span>
+          </div>
+          <input class="field-input" id="h2-${sec.id}" value="${esc(sec.section_heading)}" placeholder="Section heading..." oninput="updateTotalWords()">
+        </div>
+        <div style="flex-shrink:0">
+          <label class="field-label" style="font-size:10px">H2 Words</label>
+          <input class="field-input-sm" id="h2w-${sec.id}" type="number" min="50" max="500" step="10" value="${sec.h2_word_target}" oninput="updateTotalWords()">
+        </div>
+      </div>
+      <div style="margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label class="field-label" style="font-size:10px;margin-bottom:0">H3 Subtopics</label>
+          <span class="format-tag format-tag-h3" style="font-size:8px">Para + Bullets</span>
+        </div>
+        ${sec.subtopics.map((st, sti) => `
+          <div class="h3-card">
+            <div class="h3-row">
+              <span style="font-family:var(--mono);font-size:10px;color:var(--text3);min-width:32px">H3.${sti+1}</span>
+              <input class="h3-heading-input" id="h3-${st.id}" value="${esc(st.heading)}" placeholder="Subtopic heading..." oninput="updateTotalWords()">
+              <div class="h3-meta">
+                <input class="field-input-sm" id="h3w-${st.id}" type="number" min="30" max="500" step="5" value="${st.word_target}" style="width:60px" oninput="updateTotalWords()">
+                <span>w</span>
+              </div>
+              ${sec.subtopics.length > 1 ? `<button class="h3-remove" onclick="removeSubtopic('${sec.id}','${st.id}')">×</button>` : ""}
+            </div>
+          </div>
+        `).join("")}
+        <button class="btn btn-ghost btn-sm" style="margin-top:4px;font-size:11px;padding:4px 12px" onclick="addSubtopic('${sec.id}')">+ H3</button>
+      </div>
+      <div class="word-summary-bar">
+        <span>H2: <b>${sec.h2_word_target}w</b></span>
+        ${sec.subtopics.map((st, sti) => `<span>H3.${sti+1}: <b>${st.word_target}w</b></span>`).join("")}
+        <span style="margin-left:auto;color:var(--accent)">= <b>${secW}w</b></span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  updateTotalWords();
+}
+
+function esc(s) { return (s||"").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+// ═══════════════════════════════════════════════════════════════
+// GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+function buildInput() {
+  syncOutlineFromDOM();
+  return {
+    topic: document.getElementById("inp-topic").value.trim(),
+    article_title: document.getElementById("inp-title").value.trim(),
+    target_audience: document.getElementById("inp-audience").value.trim(),
+    search_intent: document.getElementById("inp-intent").value.trim(),
+    content_brief: document.getElementById("inp-brief").value.trim(),
+    outline: state.outline.map(s => ({
+      section_heading: s.section_heading.trim(),
+      h2_word_target: parseInt(s.h2_word_target) || 0,
+      subtopics: s.subtopics.map(st => ({ heading: st.heading.trim(), word_target: parseInt(st.word_target) || 0 })),
+    })),
+  };
+}
+
+function addLog(msg, type) {
+  const colors = { info: "var(--text2)", success: "var(--green)", generate: "var(--blue)", warn: "var(--warn)", error: "var(--red)", complete: "var(--accent2)" };
+  const container = document.getElementById("logContainer");
+  const div = document.createElement("div");
+  div.className = "log-entry";
+  div.style.color = colors[type] || "var(--text2)";
+  div.textContent = msg;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateProgress(pct) {
+  state.progress = pct;
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("genProgressLabel").textContent = pct + "%";
+}
+
+function updateGenStatus(label) {
+  document.getElementById("genStatusLabel").textContent = label;
+}
+
+function updateGenActions() {
+  const el = document.getElementById("genActions");
+  el.innerHTML = "";
+  if (state.status === "running") {
+    el.innerHTML = `<button class="btn btn-secondary" style="border-color:var(--red);color:var(--red)" onclick="cancelGeneration()">Cancel</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else if (state.status === "complete") {
+    el.innerHTML = `<button class="btn btn-primary" onclick="switchView('output')">View Article</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else if (state.status === "error") {
+    el.innerHTML = `<button class="btn btn-primary" onclick="startGeneration()">Retry</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else {
+    el.innerHTML = `<button class="btn btn-primary" onclick="startGeneration()">Generate</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  }
+}
+
+async function startGeneration() {
+  hideError();
+  const input = buildInput();
+  const apiKey = document.getElementById("apiKeyInput").value.trim();
+  const errors = validateInput(input);
+  if (!apiKey) errors.push("API key is required");
+  if (errors.length) { showError(errors.join(" | ")); return; }
+
+  state.status = "running"; state.result = null;
+  switchView("generate");
+  document.getElementById("logContainer").innerHTML = "";
+  updateProgress(0);
+  updateGenStatus("Generating...");
+  updateGenActions();
+
+  const total = input.outline.length;
+  let completed = 0;
+  addLog(`Validated: ${total} sections, ${computeTotalWords(input.outline).toLocaleString()}w target`, "success");
+
+  const controller = new AbortController();
+  state.abortController = controller;
+
+  try {
+    const res = await generateArticle(input, {
+      apiKey,
+      signal: controller.signal,
+      onProgress: (step, d) => {
+        if (step === "generating_section") addLog(`→ Section ${d.index}/${d.total}: "${d.heading}" (${d.target}w)`, "generate");
+        else if (step === "regenerating") addLog(`  ⚠ "${d.heading}" ${d.got}w < ${d.target}w, regenerating...`, "warn");
+        else if (step === "section_complete") {
+          completed++;
+          updateProgress(Math.round((completed / total) * 100));
+          addLog(`  ✓ "${d.heading}" ${d.wordCount}w (${Math.round((d.wordCount / d.target) * 100)}%)`, "success");
+        } else if (step === "assembling") { addLog("Assembling final article...", "info"); updateProgress(95); }
+        else if (step === "complete") { addLog(`Done: ${d.totalWords.toLocaleString()} total words`, "complete"); updateProgress(100); }
+      },
+    });
+
+    state.result = res; state.status = "complete";
+    updateGenStatus("Complete");
+    updateGenActions();
+    renderOutput();
+
+    // Save to history
+    state.history.unshift({
+      id: uid(), title: input.article_title, topic: input.topic,
+      totalWords: res.totalWords, sections: res.sections.length,
+      article: res.article, sectionData: res.sections, timestamp: Date.now(),
+    });
+    state.history = state.history.slice(0, 20);
+    saveHistory();
+
+    setTimeout(() => switchView("output"), 600);
+  } catch(err) {
+    if (err.name === "AbortError") {
+      addLog("Cancelled.", "error"); state.status = "idle";
+      updateGenStatus("Cancelled");
+    } else {
+      addLog(`Error: ${err.message}`, "error"); state.status = "error";
+      updateGenStatus("Error");
+      showError(err.message);
+    }
+    updateGenActions();
+  }
+}
+
+function cancelGeneration() {
+  state.abortController?.abort();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTPUT RENDERING
+// ═══════════════════════════════════════════════════════════════
+
+function renderOutput() {
+  const el = document.getElementById("outputContent");
+  if (!state.result) {
+    el.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3)">
+      <div style="font-size:36px;margin-bottom:12px">—</div>
+      <div style="font-family:var(--mono);font-size:13px">No article yet.</div>
+      <button class="btn btn-primary" style="margin-top:20px" onclick="switchView('configure')">Configure</button>
+    </div>`;
+    return;
+  }
+  const r = state.result;
+  const totalTarget = computeTotalWords(state.outline);
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Words</div><div class="stat-value">${r.totalWords.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">Sections</div><div class="stat-value">${r.sections.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg/Section</div><div class="stat-value">${Math.round(r.totalWords / r.sections.length)}</div></div>
+      <div class="stat-card"><div class="stat-label">Target Hit</div><div class="stat-value">${Math.round((r.totalWords / totalTarget) * 100)}%</div></div>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="field-label" style="margin-bottom:8px">Section Breakdown</label>
+      ${r.sections.map(s => {
+        const ratio = s.wordCount / s.target;
+        const pass = ratio >= DEFAULTS.MIN_WORD_RATIO;
+        return `<div class="section-result ${pass ? "section-result-pass" : "section-result-warn"}">
+          <span style="color:var(--text);font-weight:500">${esc(s.heading)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${pass ? "var(--green)" : "var(--warn)"}">${s.wordCount}w / ${s.target}w (${Math.round(ratio*100)}%)</span>
+        </div>`;
+      }).join("")}
+    </div>
+    <label class="field-label" style="margin-bottom:8px">Article Preview</label>
+    <div class="article-output">${renderMarkdown(r.article)}</div>
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="downloadArticle()">Download .md</button>
+      <button class="btn btn-secondary" onclick="copyArticle()">Copy</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">New Article</button>
+    </div>
+  `;
+}
+
+function downloadArticle() {
+  if (!state.result) return;
+  const blob = new Blob([state.result.article], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const title = document.getElementById("inp-title").value || "article";
+  a.download = title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".md";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyArticle() {
+  if (state.result) navigator.clipboard.writeText(state.result.article);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════════
+
+function renderHistory() {
+  const el = document.getElementById("historyContent");
+  if (!state.history.length) {
+    el.innerHTML = `<div class="history-empty">
+      <div style="font-size:40px;margin-bottom:16px;opacity:0.4">☰</div>
+      <div style="font-family:var(--mono);font-size:13px;margin-bottom:8px">No articles generated yet</div>
+      <div style="font-size:12px;max-width:320px;margin:0 auto;line-height:1.6">
+        Generated articles are automatically saved here. Start by configuring and generating your first article.
+      </div>
+      <button class="btn btn-primary" style="margin-top:24px" onclick="switchView('configure')">Get Started</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:0.06em">
+        ${state.history.length} article${state.history.length !== 1 ? "s" : ""} saved
+      </span>
+      <button class="btn btn-secondary" onclick="clearAllHistory()" style="font-size:11px;padding:7px 14px;border-color:#5A3030;color:var(--red)">Clear All</button>
+    </div>
+    ${state.history.map(entry => {
+      const d = new Date(entry.timestamp);
+      const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const timeStr = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      return `<div class="history-card" onclick="loadFromHistory('${entry.id}')">
+        <div class="history-title">${esc(entry.title)}</div>
+        <div class="history-meta">
+          <span>${dateStr} at ${timeStr}</span>
+          <span class="history-meta-accent">${entry.totalWords?.toLocaleString()}w</span>
+          <span>${entry.sections} sections</span>
+          <span style="color:var(--text3)">${esc(entry.topic)}</span>
+        </div>
+        <div class="history-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px" onclick="loadFromHistory('${entry.id}')">View</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--text3)" onclick="downloadFromHistory('${entry.id}')">Download</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--red)" onclick="deleteFromHistory('${entry.id}')">Delete</button>
+        </div>
+      </div>`;
+    }).join("")}
+  `;
+}
+
+function loadFromHistory(id) {
+  const entry = state.history.find(h => h.id === id);
+  if (!entry) return;
+  state.result = { article: entry.article, sections: entry.sectionData, totalWords: entry.totalWords };
+  renderOutput();
+  switchView("output");
+}
+
+function downloadFromHistory(id) {
+  const entry = state.history.find(h => h.id === id);
+  if (!entry) return;
+  const blob = new Blob([entry.article], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = entry.title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".md";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function deleteFromHistory(id) {
+  state.history = state.history.filter(h => h.id !== id);
+  saveHistory();
+  renderHistory();
+}
+
+function clearAllHistory() {
+  state.history = [];
+  saveHistory();
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORM HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function loadExample() {
+  document.getElementById("inp-topic").value = EXAMPLE.topic;
+  document.getElementById("inp-title").value = EXAMPLE.article_title;
+  document.getElementById("inp-audience").value = EXAMPLE.target_audience;
+  document.getElementById("inp-intent").value = EXAMPLE.search_intent;
+  document.getElementById("inp-brief").value = EXAMPLE.content_brief;
+  state.outline = EXAMPLE.outline.map(s => ({
+    ...s, id: uid(),
+    subtopics: s.subtopics.map(st => ({ ...st, id: uid() })),
+  }));
+  renderOutline();
+}
+
+function clearForm() {
+  document.getElementById("inp-topic").value = "";
+  document.getElementById("inp-title").value = "";
+  document.getElementById("inp-audience").value = "";
+  document.getElementById("inp-intent").value = "";
+  document.getElementById("inp-brief").value = "";
+  state.outline = [{ id: uid(), section_heading: "", h2_word_target: 100, subtopics: [{ id: uid(), heading: "", word_target: 75 }] }];
+  renderOutline();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+loadSavedKey();
+loadHistory();
+loadExample();
+</script>
+</body>
+</html>

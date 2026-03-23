@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Forge — AI Article Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0C0E12; --bg2: #13161D; --bg3: #1A1E28; --bg4: #222835;
+  --border: #2A3040; --border2: #3A4258;
+  --text: #D4D8E4; --text2: #8B92A8; --text3: #5C6480;
+  --accent: #C8A46E; --accent2: #E8C88E; --accent-dim: #8A7040;
+  --green: #6ECE7A; --green-dim: #2A4030;
+  --red: #E86A6A; --red-dim: #402A2A;
+  --blue: #6AA8E8; --blue-dim: #2A3040;
+  --warn: #E8B86A; --warn-dim: #40382A;
+  --radius: 10px; --radius-sm: 6px;
+  --mono: 'DM Mono', monospace; --serif: 'Source Serif 4', serif; --sans: 'Outfit', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; }
+input, textarea, button, select { font-family: inherit; }
+
+/* Header */
+.header { padding: 28px 24px 20px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, #10131A 0%, var(--bg) 100%); }
+.header-inner { max-width: 920px; margin: 0 auto; }
+.header-badge { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; }
+.header-title { font-family: var(--serif); font-size: 26px; font-weight: 700; color: #F0F2F8; letter-spacing: -0.02em; }
+.header-sub { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
+
+/* Nav */
+.nav { border-bottom: 1px solid var(--border); background: var(--bg2); position: sticky; top: 0; z-index: 20; }
+.nav-inner { max-width: 920px; margin: 0 auto; display: flex; overflow-x: auto; scrollbar-width: none; }
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-btn { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); background: none; border: none; padding: 13px 18px; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; letter-spacing: 0.02em; }
+.nav-btn:hover { color: var(--text2); }
+.nav-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Content */
+.content { max-width: 920px; margin: 0 auto; padding: 28px 24px 60px; width: 100%; }
+
+/* API Key Bar */
+.api-key-bar { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; transition: border-color 0.2s; }
+.api-key-bar.saved { border-color: #3A5A40; }
+.api-key-label { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em; white-space: nowrap; font-weight: 500; }
+.api-key-input { flex: 1; min-width: 180px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 8px 12px; outline: none; }
+.api-key-input:focus { border-color: var(--accent-dim); }
+.key-saved-badge { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.06em; }
+
+/* Fields */
+.field-group { margin-bottom: 18px; }
+.field-label { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; display: block; }
+.field-input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.15s; }
+.field-input:focus { border-color: var(--accent-dim); }
+.field-input::placeholder { color: var(--text3); }
+textarea.field-input { resize: vertical; min-height: 68px; line-height: 1.55; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+.field-input-sm { width: 70px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 6px 10px; outline: none; text-align: center; }
+.field-input-sm:focus { border-color: var(--accent-dim); }
+
+/* Section Cards */
+.section-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
+.section-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-card-num { font-family: var(--mono); font-size: 11px; color: var(--accent); font-weight: 500; background: var(--bg); padding: 3px 10px; border-radius: 20px; }
+.section-card-remove { background: none; border: 1px solid var(--border); color: var(--text3); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.section-card-remove:hover { border-color: var(--red); color: var(--red); }
+
+/* H3 Cards */
+.h3-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+.h3-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.h3-heading-input { flex: 1; min-width: 140px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: var(--sans); font-size: 13px; padding: 8px 12px; outline: none; }
+.h3-heading-input:focus { border-color: var(--accent-dim); }
+.h3-heading-input::placeholder { color: var(--text3); }
+.h3-meta { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--text3); white-space: nowrap; }
+.h3-remove { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 4px; line-height: 1; }
+.h3-remove:hover { color: var(--red); }
+.format-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 10px; display: inline-block; }
+.format-tag-h2 { background: #2A3548; color: var(--blue); border: 1px solid #3A4A60; }
+.format-tag-h3 { background: #2A3840; color: #6EC8A0; border: 1px solid #3A5A4A; }
+.word-summary-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.word-chip b { color: var(--accent2); font-weight: 600; }
+
+/* Buttons */
+.btn { font-family: var(--mono); font-size: 12px; font-weight: 500; border: none; border-radius: var(--radius-sm); padding: 10px 20px; cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em; }
+.btn-primary { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { background: var(--accent-dim); cursor: default; opacity: 0.6; }
+.btn-secondary { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+.btn-ghost { background: none; color: var(--accent); padding: 10px 16px; border: none; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+.btn-ghost:hover { color: var(--accent2); }
+.btn-sm { padding: 6px 14px; font-size: 11px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Progress */
+.progress-bar-bg { background: var(--bg3); border-radius: 20px; height: 8px; overflow: hidden; margin: 16px 0; border: 1px solid var(--border); }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); border-radius: 20px; transition: width 0.5s ease; }
+
+/* Log */
+.log-container { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; max-height: 360px; overflow-y: auto; font-family: var(--mono); font-size: 12px; line-height: 1.8; }
+@keyframes logFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.log-entry { animation: logFade 0.3s ease; }
+
+/* Article output */
+.article-output { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; font-family: var(--serif); font-size: 15px; line-height: 1.75; color: var(--text); max-height: 600px; overflow-y: auto; }
+.article-output h1 { font-size: 24px; margin-bottom: 20px; color: #F0F2F8; font-family: var(--serif); }
+.article-output h2 { font-size: 19px; margin: 24px 0 12px; color: var(--accent2); font-family: var(--serif); }
+.article-output h3 { font-size: 16px; margin: 18px 0 8px; color: var(--blue); font-family: var(--serif); }
+.article-output p { margin: 8px 0; }
+.article-output hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.article-output ul { margin: 10px 0 10px 24px; list-style-type: disc; }
+.article-output li { margin-bottom: 6px; line-height: 1.6; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
+.stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
+.stat-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-value { font-family: var(--serif); font-size: 22px; font-weight: 700; color: #F0F2F8; }
+.section-result { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 13px; }
+.section-result-pass { background: var(--green-dim); border: 1px solid #3A5A40; }
+.section-result-warn { background: var(--warn-dim); border: 1px solid #5A4A2A; }
+
+/* Error */
+.error-box { background: var(--red-dim); border: 1px solid #5A3030; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--red); display: none; }
+.error-box.visible { display: block; }
+
+/* History */
+.history-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.15s; }
+.history-card:hover { border-color: var(--accent-dim); }
+.history-title { font-family: var(--serif); font-size: 16px; font-weight: 600; color: #F0F2F8; margin-bottom: 6px; }
+.history-meta { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.history-meta-accent { color: var(--accent); }
+.history-actions { display: flex; gap: 8px; margin-top: 12px; }
+.history-empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+
+/* Views */
+.view { display: none; }
+.view.active { display: block; }
+.help-text { font-size: 12px; color: var(--text3); margin-top: 4px; line-height: 1.5; }
+
+/* Outline Generator */
+.outline-gen-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.outline-gen-title { font-family: var(--serif); font-size: 18px; font-weight: 600; color: #F0F2F8; margin-bottom: 4px; }
+.outline-gen-sub { font-size: 13px; color: var(--text3); margin-bottom: 20px; line-height: 1.5; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--accent-dim); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.outline-preview { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; margin-top: 16px; font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--text2); max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-badge">Content Forge</div>
+    <div class="header-title">AI Article Generation Agent</div>
+    <div class="header-sub">Section-by-section long-form content pipeline powered by Claude API. Configure, generate with real-time progress, and download.</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-inner" id="nav-inner">
+    <button class="nav-btn active" data-view="outline-ai">Outline AI</button>
+    <button class="nav-btn" data-view="configure">Configure</button>
+    <button class="nav-btn" data-view="generate">Generate</button>
+    <button class="nav-btn" data-view="output">Output</button>
+    <button class="nav-btn" data-view="history">History</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- API KEY BAR -->
+  <div class="api-key-bar" id="apiKeyBar">
+    <span class="api-key-label">API KEY</span>
+    <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-api03-...">
+    <button class="btn btn-secondary" id="toggleKeyBtn" style="padding:8px 12px;font-size:11px">Show</button>
+    <button class="btn btn-secondary" id="saveKeyBtn" style="padding:8px 12px;font-size:11px;border-color:var(--green);color:var(--green)">Save</button>
+    <button class="btn btn-secondary" id="clearKeyBtn" style="padding:8px 12px;font-size:11px;border-color:#5A3030;color:var(--red);display:none">Clear</button>
+    <span class="key-saved-badge" id="keySavedBadge" style="display:none">&#10003; Saved</span>
+  </div>
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- ═══ OUTLINE AI VIEW ═══ -->
+  <div class="view active" id="view-outline-ai">
+    <div class="outline-gen-card">
+      <div class="outline-gen-title">AI Outline Generator</div>
+      <div class="outline-gen-sub">Provide your target details and Claude will generate a complete article outline with H2 sections, optional H3 subtopics, word targets, title, audience profile, and content brief — all auto-filled into the Configure tab.</div>
+
+      <div class="field-group">
+        <label class="field-label">Target Keyword <span style="color:var(--text3);text-transform:none;font-weight:400">*</span></label>
+        <input class="field-input" id="oi-keyword" placeholder="e.g. sustainable software engineering, best CRM for startups...">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Target Location</label>
+          <input class="field-input" id="oi-location" placeholder="e.g. United States, Global, India...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Audience Persona</label>
+          <input class="field-input" id="oi-persona" placeholder="e.g. SaaS founders, junior developers...">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Additional Instructions <span style="color:var(--text3);text-transform:none;font-weight:400">(optional)</span></label>
+        <textarea class="field-input" id="oi-instructions" placeholder="e.g. Include a comparison table section, focus on beginner-friendly language, target ~4000 words, add FAQ section at the end..." rows="3"></textarea>
+      </div>
+
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-primary" id="genOutlineBtn" style="padding:12px 28px;font-size:13px" onclick="generateOutline()">Generate Outline</button>
+        <button class="btn btn-ghost" onclick="switchView('configure')">Skip — Configure Manually</button>
+      </div>
+    </div>
+
+    <!-- Outline preview area -->
+    <div id="outlinePreviewArea" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <label class="field-label" style="margin-bottom:0">Generated Outline Preview</label>
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn btn-primary btn-sm" onclick="applyOutline()">Apply &amp; Go to Configure</button>
+          <button class="btn btn-ghost btn-sm" onclick="generateOutline()">Regenerate</button>
+        </div>
+      </div>
+      <div class="outline-preview" id="outlinePreview"></div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIGURE VIEW ═══ -->
+  <div class="view" id="view-configure">
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Topic</label><input class="field-input" id="inp-topic" placeholder="Main topic..."></div>
+      <div class="field-group"><label class="field-label">Article Title (H1)</label><input class="field-input" id="inp-title" placeholder="Full title..."></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">H1 Intro Word Count</label>
+        <input class="field-input" id="inp-h1words" type="number" min="50" max="500" step="10" value="130" placeholder="120-150" oninput="updateTotalWords()">
+        <div class="help-text">Intro paragraph(s) right after the H1 title</div>
+      </div>
+      <div class="field-group"><label class="field-label">Target Audience</label><input class="field-input" id="inp-audience" placeholder="Who is this for?"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Search Intent</label><input class="field-input" id="inp-intent" placeholder="What are they looking for?"></div>
+      <div class="field-group"><label class="field-label">Content Brief</label><input class="field-input" id="inp-brief" placeholder="Scope and key points..."></div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:24px;margin-bottom:6px">
+      <div>
+        <label class="field-label" style="margin-bottom:0">Outline Sections</label>
+        <div class="help-text" style="margin-top:2px">Total: <span id="totalWordsBadge" style="font-weight:600;font-family:var(--mono)">0</span> words</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="addSection()">+ Section</button>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:14px;margin-top:6px">
+      <span class="format-tag format-tag-h2">H2 Paragraph only</span>
+      <span class="format-tag format-tag-h3">H3 Paragraph + Bullets</span>
+    </div>
+
+    <div id="outlineContainer"></div>
+
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-primary" id="generateBtn" style="padding:12px 28px;font-size:13px" onclick="startGeneration()">Generate Article</button>
+      <button class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+      <button class="btn btn-ghost" style="color:var(--text3)" onclick="clearForm()">Clear</button>
+    </div>
+  </div>
+
+  <!-- ═══ GENERATE VIEW ═══ -->
+  <div class="view" id="view-generate">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text2)" id="genStatusLabel">Ready</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--accent)" id="genProgressLabel">0%</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div class="log-container" id="logContainer"><span style="color:var(--text3)">Waiting...</span></div>
+    <div class="btn-row" style="margin-top:18px" id="genActions"></div>
+  </div>
+
+  <!-- ═══ OUTPUT VIEW ═══ -->
+  <div class="view" id="view-output">
+    <div id="outputContent">
+      <div style="text-align:center;padding:60px;color:var(--text3)">
+        <div style="font-size:36px;margin-bottom:12px">—</div>
+        <div style="font-family:var(--mono);font-size:13px">No article yet.</div>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="switchView('configure')">Configure</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTORY VIEW ═══ -->
+  <div class="view" id="view-history">
+    <div id="historyContent"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+const DEFAULTS = {
+  MODEL: "claude-sonnet-4-20250514",
+  MAX_TOKENS: 8096,
+  RETRY_ATTEMPTS: 5,
+  RETRY_BASE_DELAY_MS: 1000,
+  MIN_WORD_RATIO: 0.65,
+};
+
+function uid() { return "id-" + Math.random().toString(36).slice(2, 10); }
+function countWords(t) { return t.split(/\s+/).filter(Boolean).length; }
+
+function computeSectionWords(s) {
+  return (s.h2_word_target || 0) + (s.subtopics || []).reduce((sum, st) => sum + (st.word_target || 0), 0);
+}
+function computeTotalWords(outline) {
+  return outline.reduce((sum, s) => sum + computeSectionWords(s), 0);
+}
+
+function validateInput(input) {
+  const errors = [];
+  if (!input.topic?.trim()) errors.push("Topic is required");
+  if (!input.article_title?.trim()) errors.push("Article title is required");
+  if (!input.target_audience?.trim()) errors.push("Target audience is required");
+  if (!input.search_intent?.trim()) errors.push("Search intent is required");
+  if (!input.content_brief?.trim()) errors.push("Content brief is required");
+  if (!input.outline || input.outline.length === 0) {
+    errors.push("At least one section is required");
+  } else {
+    input.outline.forEach((s, i) => {
+      if (!s.section_heading?.trim()) errors.push(`Section ${i+1}: heading required`);
+      if (typeof s.h2_word_target !== "number" || s.h2_word_target < 50) errors.push(`Section ${i+1}: H2 words >= 50`);
+      if (s.subtopics?.length) {
+        s.subtopics.forEach((st, j) => {
+          if (!st.heading?.trim()) errors.push(`S${i+1} H3.${j+1}: heading required`);
+          if (typeof st.word_target !== "number" || st.word_target < 30) errors.push(`S${i+1} H3.${j+1}: words >= 30`);
+        });
+      }
+    });
+  }
+  const total = computeTotalWords(input.outline || []);
+  if (total < 2000) errors.push(`Total (${total}) must be >= 2,000`);
+  if (total > 10000) errors.push(`Total (${total}) must be <= 10,000`);
+  return errors;
+}
+
+function sanitize(str) {
+  return String(str || "")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2026]/g, "...")
+    .replace(/[\u00A0]/g, " ");
+}
+
+function buildSectionPrompt(input, sectionIdx) {
+  var sec = input.outline[sectionIdx];
+  var wordTarget = computeSectionWords(sec);
+  var sectionTitle = sanitize(sec.section_heading);
+
+  var p = "Write ONE section of an article. Output ONLY the section content. No preamble. No commentary.\n\n";
+  p += "Article: " + sanitize(input.article_title) + "\n";
+  p += "Audience: " + sanitize(input.target_audience) + "\n";
+  p += "Section " + (sectionIdx + 1) + "/" + input.outline.length + ": " + sectionTitle + "\n";
+  p += "Word target: " + wordTarget + " words\n\n";
+
+  p += "Start with: ## " + sectionTitle + "\n\n";
+  p += "Write " + sec.h2_word_target + " words of intro paragraphs (no bullets, no lists).\n";
+
+  if (sec.subtopics && sec.subtopics.length > 0) {
+    p += "\nThen write these H3 subtopics:\n";
+    for (var j = 0; j < sec.subtopics.length; j++) {
+      var st = sec.subtopics[j];
+      p += "- ### " + sanitize(st.heading) + " (" + st.word_target + " words): paragraph then bullet list\n";
+    }
+  }
+
+  p += "\nRules: Professional tone. No filler. No article intro/conclusion. No references to other sections. Output ONLY the section content starting with ## heading.";
+  return p;
+}
+
+async function callClaude(prompt, opts) {
+  var model = (opts && opts.model) ? opts.model : DEFAULTS.MODEL;
+  var maxTokens = (opts && opts.maxTokens) ? opts.maxTokens : DEFAULTS.MAX_TOKENS;
+  var safePrompt = sanitize(prompt);
+  var apiKey = document.getElementById("apiKeyInput").value.trim();
+
+  var lastError;
+  for (var attempt = 1; attempt <= DEFAULTS.RETRY_ATTEMPTS; attempt++) {
+    try {
+      var bodyStr = JSON.stringify({
+        model: model,
+        max_tokens: maxTokens,
+        messages: [{ role: "user", content: safePrompt }]
+      });
+
+      // Build headers based on whether API key is available
+      // With key: direct browser call (Vercel, localhost, standalone)
+      // Without key: artifact sandbox proxy (claude.ai)
+      var headers = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["x-api-key"] = apiKey;
+        headers["anthropic-version"] = "2023-06-01";
+        headers["anthropic-dangerous-direct-browser-access"] = "true";
+      }
+
+      var res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: headers,
+        body: bodyStr
+      });
+
+      if (res.status === 429 || res.status === 529) {
+        await new Promise(function(r) { setTimeout(r, 3000 * attempt); });
+        lastError = new Error("Rate limited (" + res.status + ")");
+        continue;
+      }
+      if (!res.ok) {
+        var errText = "";
+        try { errText = await res.text(); } catch(e) {}
+        throw new Error("API " + res.status + ": " + errText.substring(0, 200));
+      }
+      var data = await res.json();
+      var parts = [];
+      if (data.content) {
+        for (var ci = 0; ci < data.content.length; ci++) {
+          if (data.content[ci].type === "text") parts.push(data.content[ci].text);
+        }
+      }
+      var text = parts.join("\n").trim();
+      if (!text) throw new Error("Empty API response");
+      return text;
+    } catch (err) {
+      lastError = err;
+      var errMsg = String(err.message || err);
+      // Detect CORS / network errors on hosted sites
+      if (errMsg === "Load failed" || errMsg === "Failed to fetch" || errMsg.indexOf("NetworkError") > -1) {
+        if (!apiKey) {
+          throw new Error("API key required. Enter your Anthropic API key in the API KEY field above. Direct browser calls need a valid key.");
+        }
+      }
+      var isPatternError = errMsg.indexOf("pattern") > -1;
+      var delay = isPatternError ? (1000 + Math.random() * 2000) : (DEFAULTS.RETRY_BASE_DELAY_MS * attempt);
+      if (attempt < DEFAULTS.RETRY_ATTEMPTS) {
+        await new Promise(function(r) { setTimeout(r, delay); });
+      }
+    }
+  }
+  throw lastError;
+}
+
+function cleanResponse(rawText) {
+  var text = String(rawText || "").trim();
+  // Strip markdown code fences if model wrapped output
+  text = text.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "").trim();
+  // Try to extract content from JSON if model returned JSON anyway
+  if (text.charAt(0) === "{") {
+    try {
+      var obj = JSON.parse(text);
+      if (obj.content) return obj.content;
+    } catch(e) {}
+    var match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        var obj2 = JSON.parse(match[0]);
+        if (obj2.content) return obj2.content;
+      } catch(e2) {}
+    }
+  }
+  return text;
+}
+
+// Sequential generation with delay between sections
+async function generateArticle(input, options) {
+  var onProgress = (options && options.onProgress) ? options.onProgress : null;
+  var total = input.outline.length;
+  var allSections = [];
+  var h1Intro = "";
+
+  // Generate H1 intro first
+  var h1Target = input.h1_word_target || 130;
+  if (h1Target > 0) {
+    if (onProgress) onProgress("generating_section", {
+      index: 0, total: total, heading: "H1 Intro: " + input.article_title, target: h1Target
+    });
+
+    try {
+      var h1Prompt = "Write an article introduction. Output ONLY the intro text. No headings. No commentary.\n\n";
+      h1Prompt += "Article: " + sanitize(input.article_title) + "\n";
+      h1Prompt += "Audience: " + sanitize(input.target_audience) + "\n";
+      h1Prompt += "Brief: " + sanitize(input.content_brief) + "\n";
+      h1Prompt += "Word count: " + h1Target + " words\n\n";
+      h1Prompt += "Write " + h1Target + " words of flowing intro paragraphs. State what this article covers. Professional tone. No headings. No bullet points. Output ONLY the paragraph text.";
+
+      var h1Raw = await callClaude(h1Prompt);
+      h1Intro = cleanResponse(h1Raw);
+      var h1Wc = countWords(h1Intro);
+      if (onProgress) onProgress("section_complete", {
+        heading: "H1 Intro", wordCount: h1Wc, target: h1Target
+      });
+    } catch(err) {
+      if (onProgress) onProgress("section_error", {
+        heading: "H1 Intro", error: String(err.message || err)
+      });
+    }
+
+    await new Promise(function(r) { setTimeout(r, 500); });
+  }
+
+  for (var i = 0; i < total; i++) {
+    if (generationCancelled) throw new Error("Cancelled");
+
+    var sec = input.outline[i];
+    var target = computeSectionWords(sec);
+
+    if (onProgress) onProgress("generating_section", {
+      index: i + 1, total: total, heading: sec.section_heading, target: target
+    });
+
+    // Small delay between sections to avoid proxy congestion
+    if (i > 0) {
+      await new Promise(function(r) { setTimeout(r, 500); });
+    }
+
+    try {
+      var prompt = buildSectionPrompt(input, i);
+      var rawResponse = await callClaude(prompt);
+      var content = cleanResponse(rawResponse);
+      var wc = countWords(content);
+
+      allSections.push({
+        heading: sec.section_heading,
+        content: content,
+        wordCount: wc,
+        target: target
+      });
+
+      if (onProgress) onProgress("section_complete", {
+        heading: sec.section_heading, wordCount: wc, target: target
+      });
+    } catch(err) {
+      var errMsg = String(err.message || err);
+      // If OpenAI is blocked in this environment, stop immediately
+      if (errMsg.indexOf("blocked in this environment") > -1 || errMsg.indexOf("Download the HTML") > -1) {
+        if (onProgress) onProgress("section_error", { heading: sec.section_heading, error: errMsg });
+        throw err; // Bubble up to show in error box
+      }
+      // Log the failure but continue with other sections
+      allSections.push({
+        heading: sec.section_heading,
+        content: "## " + sec.section_heading + "\n\n[Error after " + DEFAULTS.RETRY_ATTEMPTS + " attempts: " + errMsg + "]",
+        wordCount: 0,
+        target: target
+      });
+      if (onProgress) onProgress("section_error", {
+        heading: sec.section_heading, error: errMsg
+      });
+      // Wait a bit longer after an error before next section
+      await new Promise(function(r) { setTimeout(r, 2000); });
+    }
+  }
+
+  if (onProgress) onProgress("assembling");
+  var artParts = ["# " + input.article_title + "\n"];
+  if (h1Intro) artParts.push(h1Intro);
+  for (var ai = 0; ai < allSections.length; ai++) artParts.push(allSections[ai].content);
+  var article = artParts.join("\n\n---\n\n");
+  var totalWords = countWords(article);
+  if (onProgress) onProgress("complete", { totalWords: totalWords });
+  return { article: article, sections: allSections, totalWords: totalWords };
+}
+
+function renderMarkdown(text) {
+  if (!text) return "";
+  return text
+    .replace(/^### (.+)$/gm, '</p><h3>$1</h3><p>')
+    .replace(/^## (.+)$/gm, '</p><h2>$1</h2><p>')
+    .replace(/^# (.+)$/gm, '</p><h1>$1</h1><p>')
+    .replace(/^---$/gm, '</p><hr><p>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/((?:<li>[\s\S]*?<\/li>\s*)+)/g, '<ul>$1</ul>')
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXAMPLE DATA
+// ═══════════════════════════════════════════════════════════════
+
+const EXAMPLE = {
+  topic: "Sustainable Software Engineering",
+  article_title: "Green Code: A Practitioner's Guide to Sustainable Software Engineering",
+  target_audience: "Software engineers, tech leads, and engineering managers",
+  search_intent: "Learn actionable techniques for writing energy-efficient code",
+  content_brief: "Guide covering why sustainable engineering matters, measuring carbon emissions, optimization patterns, infrastructure choices, and building a green-code culture.",
+  outline: [
+    { section_heading: "Why Software Has a Carbon Footprint", h2_word_target: 100, subtopics: [
+      { heading: "Data Center Energy Consumption", word_target: 120 },
+      { heading: "Embodied Carbon in Hardware", word_target: 120 },
+      { heading: "The Rebound Effect", word_target: 120 },
+      { heading: "Scope 1/2/3 Emissions in Tech", word_target: 120 },
+    ]},
+    { section_heading: "Measuring Your Code's Impact", h2_word_target: 120, subtopics: [
+      { heading: "Software Carbon Intensity (SCI)", word_target: 130 },
+      { heading: "Energy Profiling Tools", word_target: 130 },
+      { heading: "Cloud Carbon Dashboards", word_target: 130 },
+      { heading: "Benchmarking Methodologies", word_target: 130 },
+    ]},
+    { section_heading: "Optimization Patterns for Green Code", h2_word_target: 120, subtopics: [
+      { heading: "Algorithmic Efficiency as Sustainability", word_target: 150 },
+      { heading: "Lazy Evaluation and Demand-Driven Computation", word_target: 150 },
+      { heading: "Caching Strategies That Reduce Compute", word_target: 150 },
+      { heading: "Database Query Optimization", word_target: 150 },
+    ]},
+    { section_heading: "Infrastructure and Deployment Choices", h2_word_target: 100, subtopics: [
+      { heading: "Region Selection by Carbon Intensity", word_target: 130 },
+      { heading: "Serverless vs Always-On Trade-offs", word_target: 130 },
+      { heading: "Right-Sizing Containers and VMs", word_target: 130 },
+      { heading: "Carbon-Aware Scheduling", word_target: 130 },
+    ]},
+    { section_heading: "Building a Green Engineering Culture", h2_word_target: 100, subtopics: [
+      { heading: "Carbon Budgets in Sprint Planning", word_target: 110 },
+      { heading: "Sustainability Metrics in CI/CD", word_target: 110 },
+      { heading: "Developer Education Programs", word_target: 110 },
+      { heading: "The Business Case for Green Software", word_target: 110 },
+    ]},
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════
+
+let state = {
+  view: "configure",
+  outline: [],
+  status: "idle",
+  logs: [],
+  progress: 0,
+  result: null,
+  history: [],
+  keySaved: false,
+};
+
+let generationCancelled = false;
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE (localStorage)
+// ═══════════════════════════════════════════════════════════════
+
+function loadSavedKey() {
+  try {
+    var k = localStorage.getItem("content-forge:api-key");
+    if (k) { document.getElementById("apiKeyInput").value = k; state.keySaved = true; updateKeyUI(); }
+  } catch(e) {}
+}
+function saveKey() {
+  var v = document.getElementById("apiKeyInput").value.trim();
+  if (!v) return;
+  try { localStorage.setItem("content-forge:api-key", v); state.keySaved = true; updateKeyUI(); } catch(e) {}
+}
+function clearKey() {
+  try { localStorage.removeItem("content-forge:api-key"); } catch(e) {}
+  document.getElementById("apiKeyInput").value = "";
+  state.keySaved = false;
+  updateKeyUI();
+}
+function updateKeyUI() {
+  var bar = document.getElementById("apiKeyBar");
+  var saveBtn = document.getElementById("saveKeyBtn");
+  var clearBtn = document.getElementById("clearKeyBtn");
+  var badge = document.getElementById("keySavedBadge");
+  if (state.keySaved) {
+    bar.classList.add("saved");
+    saveBtn.style.display = "none";
+    clearBtn.style.display = "";
+    badge.style.display = "";
+  } else {
+    bar.classList.remove("saved");
+    saveBtn.style.display = "";
+    clearBtn.style.display = "none";
+    badge.style.display = "none";
+  }
+}
+function loadHistory() {
+  try {
+    var h = localStorage.getItem("content-forge:history");
+    if (h) state.history = JSON.parse(h);
+  } catch(e) {}
+}
+function saveHistory() {
+  try { localStorage.setItem("content-forge:history", JSON.stringify(state.history.slice(0, 20))); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VIEW SWITCHING
+// ═══════════════════════════════════════════════════════════════
+
+function switchView(id) {
+  state.view = id;
+  document.querySelectorAll(".view").forEach(function(v) { v.classList.remove("active"); });
+  var el = document.getElementById("view-" + id);
+  if (el) el.classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(function(b) { b.classList.toggle("active", b.dataset.view === id); });
+  if (id === "history") renderHistory();
+}
+
+document.getElementById("nav-inner").addEventListener("click", function(e) {
+  if (e.target.dataset.view) switchView(e.target.dataset.view);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// API KEY EVENTS
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById("toggleKeyBtn").addEventListener("click", function() {
+  var inp = document.getElementById("apiKeyInput");
+  var btn = document.getElementById("toggleKeyBtn");
+  if (inp.type === "password") { inp.type = "text"; btn.textContent = "Hide"; }
+  else { inp.type = "password"; btn.textContent = "Show"; }
+});
+document.getElementById("saveKeyBtn").addEventListener("click", saveKey);
+document.getElementById("clearKeyBtn").addEventListener("click", clearKey);
+document.getElementById("apiKeyInput").addEventListener("input", function() {
+  state.keySaved = false; updateKeyUI();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ERROR
+// ═══════════════════════════════════════════════════════════════
+
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent = msg; box.classList.add("visible");
+}
+function hideError() {
+  document.getElementById("errorBox").classList.remove("visible");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTLINE BUILDER
+// ═══════════════════════════════════════════════════════════════
+
+function addSection(data) {
+  state.outline.push(data || {
+    id: uid(), section_heading: "", h2_word_target: 400,
+    subtopics: [],
+  });
+  renderOutline();
+}
+
+function removeSection(id) {
+  state.outline = state.outline.filter(s => s.id !== id);
+  renderOutline();
+}
+
+function addSubtopic(sid) {
+  const sec = state.outline.find(s => s.id === sid);
+  if (sec) {
+    if (!sec.subtopics) sec.subtopics = [];
+    sec.subtopics.push({ id: uid(), heading: "", word_target: 75 });
+  }
+  renderOutline();
+}
+
+function removeAllH3(sid) {
+  const sec = state.outline.find(s => s.id === sid);
+  if (sec) sec.subtopics = [];
+  renderOutline();
+}
+
+function removeSubtopic(sid, stid) {
+  const sec = state.outline.find(s => s.id === sid);
+  if (sec) sec.subtopics = sec.subtopics.filter(st => st.id !== stid);
+  renderOutline();
+}
+
+function syncOutlineFromDOM() {
+  state.outline.forEach(sec => {
+    const hEl = document.getElementById(`h2-${sec.id}`);
+    const wEl = document.getElementById(`h2w-${sec.id}`);
+    if (hEl) sec.section_heading = hEl.value;
+    if (wEl) sec.h2_word_target = parseInt(wEl.value) || 0;
+    (sec.subtopics || []).forEach(st => {
+      const shEl = document.getElementById(`h3-${st.id}`);
+      const swEl = document.getElementById(`h3w-${st.id}`);
+      if (shEl) st.heading = shEl.value;
+      if (swEl) st.word_target = parseInt(swEl.value) || 0;
+    });
+  });
+}
+
+function updateTotalWords() {
+  syncOutlineFromDOM();
+  var h1w = parseInt(document.getElementById("inp-h1words").value) || 0;
+  var total = h1w + computeTotalWords(state.outline);
+  var badge = document.getElementById("totalWordsBadge");
+  badge.textContent = total.toLocaleString();
+  badge.style.color = (total >= 2000 && total <= 10000) ? "var(--green)" : "var(--red)";
+}
+
+function renderOutline() {
+  const container = document.getElementById("outlineContainer");
+  container.innerHTML = "";
+
+  state.outline.forEach((sec, si) => {
+    const secW = computeSectionWords(sec);
+    const hasH3 = sec.subtopics && sec.subtopics.length > 0;
+    const card = document.createElement("div");
+    card.className = "section-card";
+    card.innerHTML = `
+      <div class="section-card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="section-card-num">S${si+1}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">${secW}w</span>
+          ${!hasH3 ? '<span class="format-tag format-tag-h2" style="font-size:8px">H2 Only</span>' : ''}
+        </div>
+        ${state.outline.length > 1 ? `<button class="section-card-remove" onclick="removeSection('${sec.id}')">×</button>` : ""}
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:14px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <label class="field-label" style="font-size:10px;margin-bottom:0">H2 Heading</label>
+            <span class="format-tag format-tag-h2" style="font-size:8px">Paragraph</span>
+          </div>
+          <input class="field-input" id="h2-${sec.id}" value="${esc(sec.section_heading)}" placeholder="Section heading..." oninput="updateTotalWords()">
+        </div>
+        <div style="flex-shrink:0">
+          <label class="field-label" style="font-size:10px">H2 Words</label>
+          <input class="field-input-sm" id="h2w-${sec.id}" type="number" min="50" max="3000" step="10" value="${sec.h2_word_target}" oninput="updateTotalWords()">
+        </div>
+      </div>
+      ${hasH3 ? `
+        <div style="margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label class="field-label" style="font-size:10px;margin-bottom:0">H3 Subtopics</label>
+            <span class="format-tag format-tag-h3" style="font-size:8px">Para + Bullets</span>
+            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 8px;color:var(--red);margin-left:auto" onclick="removeAllH3('${sec.id}')">Remove all H3s</button>
+          </div>
+          ${sec.subtopics.map((st, sti) => `
+            <div class="h3-card">
+              <div class="h3-row">
+                <span style="font-family:var(--mono);font-size:10px;color:var(--text3);min-width:32px">H3.${sti+1}</span>
+                <input class="h3-heading-input" id="h3-${st.id}" value="${esc(st.heading)}" placeholder="Subtopic heading..." oninput="updateTotalWords()">
+                <div class="h3-meta">
+                  <input class="field-input-sm" id="h3w-${st.id}" type="number" min="30" max="500" step="5" value="${st.word_target}" style="width:60px" oninput="updateTotalWords()">
+                  <span>w</span>
+                </div>
+                ${sec.subtopics.length > 1 ? `<button class="h3-remove" onclick="removeSubtopic('${sec.id}','${st.id}')">×</button>` : `<button class="h3-remove" onclick="removeAllH3('${sec.id}')">×</button>`}
+              </div>
+            </div>
+          `).join("")}
+          <button class="btn btn-ghost btn-sm" style="margin-top:4px;font-size:11px;padding:4px 12px" onclick="addSubtopic('${sec.id}')">+ H3</button>
+        </div>
+      ` : `
+        <div style="padding:10px 14px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">No subtopics — this section will be paragraphs only</span>
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 12px" onclick="addSubtopic('${sec.id}')">+ Add H3 Subtopics</button>
+        </div>
+      `}
+      <div class="word-summary-bar">
+        <span>H2: <b>${sec.h2_word_target}w</b></span>
+        ${(sec.subtopics || []).map((st, sti) => `<span>H3.${sti+1}: <b>${st.word_target}w</b></span>`).join("")}
+        <span style="margin-left:auto;color:var(--accent)">= <b>${secW}w</b></span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  updateTotalWords();
+}
+
+function esc(s) { return (s||"").replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+
+// ═══════════════════════════════════════════════════════════════
+// GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+function buildInput() {
+  syncOutlineFromDOM();
+  return {
+    topic: document.getElementById("inp-topic").value.trim(),
+    article_title: document.getElementById("inp-title").value.trim(),
+    h1_word_target: parseInt(document.getElementById("inp-h1words").value) || 130,
+    target_audience: document.getElementById("inp-audience").value.trim(),
+    search_intent: document.getElementById("inp-intent").value.trim(),
+    content_brief: document.getElementById("inp-brief").value.trim(),
+    outline: state.outline.map(s => ({
+      section_heading: s.section_heading.trim(),
+      h2_word_target: parseInt(s.h2_word_target) || 0,
+      subtopics: (s.subtopics || []).filter(st => st.heading?.trim()).map(st => ({ heading: st.heading.trim(), word_target: parseInt(st.word_target) || 0 })),
+    })),
+  };
+}
+
+function addLog(msg, type) {
+  const colors = { info: "var(--text2)", success: "var(--green)", generate: "var(--blue)", warn: "var(--warn)", error: "var(--red)", complete: "var(--accent2)" };
+  const container = document.getElementById("logContainer");
+  const div = document.createElement("div");
+  div.className = "log-entry";
+  div.style.color = colors[type] || "var(--text2)";
+  div.textContent = msg;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function updateProgress(pct) {
+  state.progress = pct;
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("genProgressLabel").textContent = pct + "%";
+}
+
+function updateGenStatus(label) {
+  document.getElementById("genStatusLabel").textContent = label;
+}
+
+function updateGenActions() {
+  const el = document.getElementById("genActions");
+  el.innerHTML = "";
+  if (state.status === "running") {
+    el.innerHTML = `<button class="btn btn-secondary" style="border-color:var(--red);color:var(--red)" onclick="cancelGeneration()">Cancel</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else if (state.status === "complete") {
+    el.innerHTML = `<button class="btn btn-primary" onclick="switchView('output')">View Article</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else if (state.status === "error") {
+    el.innerHTML = `<button class="btn btn-primary" onclick="startGeneration()">Retry</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  } else {
+    el.innerHTML = `<button class="btn btn-primary" onclick="startGeneration()">Generate</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">Back</button>`;
+  }
+}
+
+async function startGeneration() {
+  hideError();
+  var input = buildInput();
+  var errors = validateInput(input);
+  if (errors.length) { showError(errors.join(" | ")); return; }
+
+  generationCancelled = false;
+  state.status = "running"; state.result = null;
+  switchView("generate");
+  document.getElementById("logContainer").innerHTML = "";
+  updateProgress(0);
+  updateGenStatus("Generating...");
+  updateGenActions();
+
+  var total = input.outline.length;
+  var completed = 0;
+  addLog("Validated: " + total + " sections, " + computeTotalWords(input.outline).toLocaleString() + "w target", "success");
+
+  try {
+    var res = await generateArticle(input, {
+      onProgress: function(step, d) {
+        if (step === "generating_section") addLog("-> Section " + d.index + "/" + d.total + ": " + d.heading + " (" + d.target + "w)", "generate");
+        else if (step === "section_complete") {
+          completed++;
+          updateProgress(Math.round((completed / total) * 100));
+          addLog("  OK " + d.heading + " - " + d.wordCount + "w (" + Math.round((d.wordCount / d.target) * 100) + "%)", "success");
+        } else if (step === "section_error") {
+          completed++;
+          updateProgress(Math.round((completed / total) * 100));
+          addLog("  FAIL " + d.heading + ": " + d.error, "error");
+        } else if (step === "assembling") { addLog("Assembling final article...", "info"); updateProgress(95); }
+        else if (step === "complete") { addLog("Done: " + d.totalWords.toLocaleString() + " total words", "complete"); updateProgress(100); }
+      },
+    });
+
+    state.result = res; state.status = "complete";
+    updateGenStatus("Complete");
+    updateGenActions();
+    renderOutput();
+
+    // Save to history
+    state.history.unshift({
+      id: uid(), title: input.article_title, topic: input.topic,
+      totalWords: res.totalWords, sections: res.sections.length,
+      article: res.article, sectionData: res.sections, timestamp: Date.now(),
+      config: {
+        topic: input.topic,
+        article_title: input.article_title,
+        h1_word_target: input.h1_word_target,
+        target_audience: input.target_audience,
+        search_intent: input.search_intent,
+        content_brief: input.content_brief,
+        outline: input.outline
+      }
+    });
+    state.history = state.history.slice(0, 20);
+    saveHistory();
+
+    setTimeout(function() { switchView("output"); }, 600);
+  } catch(err) {
+    if (err.message === "Cancelled") {
+      addLog("Cancelled.", "error"); state.status = "idle";
+      updateGenStatus("Cancelled");
+    } else {
+      addLog("Error: " + err.message, "error"); state.status = "error";
+      updateGenStatus("Error");
+      showError(err.message);
+    }
+    updateGenActions();
+  }
+}
+
+function cancelGeneration() {
+  generationCancelled = true;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTPUT RENDERING
+// ═══════════════════════════════════════════════════════════════
+
+function renderOutput() {
+  const el = document.getElementById("outputContent");
+  if (!state.result) {
+    el.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3)">
+      <div style="font-size:36px;margin-bottom:12px">—</div>
+      <div style="font-family:var(--mono);font-size:13px">No article yet.</div>
+      <button class="btn btn-primary" style="margin-top:20px" onclick="switchView('configure')">Configure</button>
+    </div>`;
+    return;
+  }
+  const r = state.result;
+  const totalTarget = computeTotalWords(state.outline);
+  el.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Words</div><div class="stat-value">${r.totalWords.toLocaleString()}</div></div>
+      <div class="stat-card"><div class="stat-label">Sections</div><div class="stat-value">${r.sections.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg/Section</div><div class="stat-value">${Math.round(r.totalWords / r.sections.length)}</div></div>
+      <div class="stat-card"><div class="stat-label">Target Hit</div><div class="stat-value">${Math.round((r.totalWords / totalTarget) * 100)}%</div></div>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="field-label" style="margin-bottom:8px">Section Breakdown</label>
+      ${r.sections.map(s => {
+        const ratio = s.wordCount / s.target;
+        const pass = ratio >= DEFAULTS.MIN_WORD_RATIO;
+        return `<div class="section-result ${pass ? "section-result-pass" : "section-result-warn"}">
+          <span style="color:var(--text);font-weight:500">${esc(s.heading)}</span>
+          <span style="font-family:var(--mono);font-size:12px;color:${pass ? "var(--green)" : "var(--warn)"}">${s.wordCount}w / ${s.target}w (${Math.round(ratio*100)}%)</span>
+        </div>`;
+      }).join("")}
+    </div>
+    <label class="field-label" style="margin-bottom:8px">Article Preview</label>
+    <div class="article-output">${renderMarkdown(r.article)}</div>
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="downloadWordArticle()">Download .docx</button>
+      <button class="btn btn-secondary" onclick="downloadPdfArticle()">Download PDF</button>
+      <button class="btn btn-secondary" onclick="downloadArticle()">Download .md</button>
+      <button class="btn btn-secondary" onclick="copyArticle()">Copy</button>
+      <button class="btn btn-ghost" onclick="switchView('configure')">New Article</button>
+    </div>
+  `;
+}
+
+function downloadArticle() {
+  if (!state.result) return;
+  var blob = new Blob([state.result.article], { type: "text/markdown" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  var title = document.getElementById("inp-title").value || "article";
+  a.download = title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".md";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadWordArticle() {
+  if (!state.result) return;
+  var title = document.getElementById("inp-title").value || "Article";
+  var htmlContent = markdownToWordHTML(state.result.article);
+
+  var docTemplate = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    + "<head><meta charset=\"utf-8\"><title>" + esc(title) + "</title>"
+    + "<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->"
+    + "<style>"
+    + "body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #1a1a1a; max-width: 700px; margin: 0 auto; padding: 40px 20px; }"
+    + "h1 { font-size: 22pt; font-weight: bold; color: #111; margin: 0 0 16px 0; line-height: 1.3; }"
+    + "h2 { font-size: 16pt; font-weight: bold; color: #222; margin: 28px 0 12px 0; line-height: 1.3; border-bottom: 1px solid #ddd; padding-bottom: 6px; }"
+    + "h3 { font-size: 13pt; font-weight: bold; color: #333; margin: 20px 0 8px 0; line-height: 1.3; }"
+    + "p { margin: 0 0 10px 0; }"
+    + "ul { margin: 8px 0 12px 24px; }"
+    + "li { margin-bottom: 4px; }"
+    + "hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }"
+    + "strong { font-weight: bold; }"
+    + "em { font-style: italic; }"
+    + "</style></head><body>"
+    + htmlContent
+    + "</body></html>";
+
+  var blob = new Blob([docTemplate], { type: "application/msword" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".doc";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function markdownToWordHTML(md) {
+  if (!md) return "";
+  var html = md;
+  // Process line by line for headings first
+  var lines = html.split("\n");
+  var result = [];
+  var inList = false;
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+
+    // Headings
+    if (line.match(/^### (.+)$/)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push("<h3>" + line.replace(/^### /, "") + "</h3>");
+    } else if (line.match(/^## (.+)$/)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push("<h2>" + line.replace(/^## /, "") + "</h2>");
+    } else if (line.match(/^# (.+)$/)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push("<h1>" + line.replace(/^# /, "") + "</h1>");
+    }
+    // Horizontal rule
+    else if (line.match(/^---$/)) {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push("<hr>");
+    }
+    // Bullet list item
+    else if (line.match(/^- (.+)$/)) {
+      if (!inList) { result.push("<ul>"); inList = true; }
+      result.push("<li>" + line.replace(/^- /, "") + "</li>");
+    }
+    // Empty line
+    else if (line.trim() === "") {
+      if (inList) { result.push("</ul>"); inList = false; }
+    }
+    // Regular paragraph text
+    else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push("<p>" + line + "</p>");
+    }
+  }
+  if (inList) result.push("</ul>");
+
+  html = result.join("\n");
+  // Inline formatting
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return html;
+}
+
+function copyArticle() {
+  if (state.result) navigator.clipboard.writeText(state.result.article);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════════
+
+function renderHistory() {
+  const el = document.getElementById("historyContent");
+  if (!state.history.length) {
+    el.innerHTML = `<div class="history-empty">
+      <div style="font-size:40px;margin-bottom:16px;opacity:0.4">☰</div>
+      <div style="font-family:var(--mono);font-size:13px;margin-bottom:8px">No articles generated yet</div>
+      <div style="font-size:12px;max-width:320px;margin:0 auto;line-height:1.6">
+        Generated articles are automatically saved here. Start by configuring and generating your first article.
+      </div>
+      <button class="btn btn-primary" style="margin-top:24px" onclick="switchView('configure')">Get Started</button>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <span style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:0.06em">
+        ${state.history.length} article${state.history.length !== 1 ? "s" : ""} saved
+      </span>
+      <button class="btn btn-secondary" onclick="clearAllHistory()" style="font-size:11px;padding:7px 14px;border-color:#5A3030;color:var(--red)">Clear All</button>
+    </div>
+    ${state.history.map(entry => {
+      const d = new Date(entry.timestamp);
+      const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      const timeStr = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      return `<div class="history-card" onclick="loadFromHistory('${entry.id}')">
+        <div class="history-title">${esc(entry.title)}</div>
+        <div class="history-meta">
+          <span>${dateStr} at ${timeStr}</span>
+          <span class="history-meta-accent">${entry.totalWords?.toLocaleString()}w</span>
+          <span>${entry.sections} sections</span>
+          <span style="color:var(--text3)">${esc(entry.topic)}</span>
+          ${entry.config ? '<span style="color:var(--blue)">outline saved</span>' : ''}
+        </div>
+        <div class="history-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px" onclick="loadFromHistory('${entry.id}')">View Article</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--blue)" onclick="loadOutlineFromHistory('${entry.id}')">${entry.config ? "Load Outline" : ""}</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--green)" onclick="downloadWordFromHistory('${entry.id}')">Word</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--accent)" onclick="downloadPdfFromHistory('${entry.id}')">PDF</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--text3)" onclick="downloadFromHistory('${entry.id}')">Markdown</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:4px 10px;color:var(--red)" onclick="deleteFromHistory('${entry.id}')">Delete</button>
+        </div>
+      </div>`;
+    }).join("")}
+  `;
+}
+
+function loadFromHistory(id) {
+  var entry = state.history.find(function(h) { return h.id === id; });
+  if (!entry) return;
+  state.result = { article: entry.article, sections: entry.sectionData, totalWords: entry.totalWords };
+  renderOutput();
+  switchView("output");
+}
+
+function loadOutlineFromHistory(id) {
+  var entry = state.history.find(function(h) { return h.id === id; });
+  if (!entry || !entry.config) return;
+  var c = entry.config;
+
+  document.getElementById("inp-topic").value = c.topic || "";
+  document.getElementById("inp-title").value = c.article_title || "";
+  document.getElementById("inp-h1words").value = c.h1_word_target || 130;
+  document.getElementById("inp-audience").value = c.target_audience || "";
+  document.getElementById("inp-intent").value = c.search_intent || "";
+  document.getElementById("inp-brief").value = c.content_brief || "";
+
+  state.outline = (c.outline || []).map(function(sec) {
+    return {
+      id: uid(),
+      section_heading: sec.section_heading || "",
+      h2_word_target: sec.h2_word_target || 100,
+      subtopics: (sec.subtopics || []).map(function(st) {
+        return { id: uid(), heading: st.heading || "", word_target: st.word_target || 75 };
+      })
+    };
+  });
+
+  renderOutline();
+  switchView("configure");
+}
+
+function downloadFromHistory(id) {
+  var entry = state.history.find(function(h) { return h.id === id; });
+  if (!entry) return;
+  var blob = new Blob([entry.article], { type: "text/markdown" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = entry.title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".md";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadWordFromHistory(id) {
+  var entry = state.history.find(function(h) { return h.id === id; });
+  if (!entry) return;
+  var htmlContent = markdownToWordHTML(entry.article);
+  var docTemplate = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+    + '<head><meta charset="utf-8"><title>' + esc(entry.title) + '</title>'
+    + '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->'
+    + '<style>body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.6;color:#1a1a1a;max-width:700px;margin:0 auto;padding:40px 20px}h1{font-size:22pt;font-weight:bold;color:#111;margin:0 0 16px 0}h2{font-size:16pt;font-weight:bold;color:#222;margin:28px 0 12px 0;border-bottom:1px solid #ddd;padding-bottom:6px}h3{font-size:13pt;font-weight:bold;color:#333;margin:20px 0 8px 0}p{margin:0 0 10px 0}ul{margin:8px 0 12px 24px}li{margin-bottom:4px}hr{border:none;border-top:1px solid #ccc;margin:24px 0}</style></head><body>'
+    + htmlContent + '</body></html>';
+  var blob = new Blob([docTemplate], { type: "application/msword" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = entry.title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "-").toLowerCase() + ".doc";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildPdfHTML(articleMarkdown, title) {
+  var htmlContent = markdownToWordHTML(articleMarkdown);
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title>'
+    + '<style>'
+    + '@page { size: A4; margin: 2.5cm 2cm; }'
+    + 'body { font-family: Georgia, "Times New Roman", serif; font-size: 11pt; line-height: 1.7; color: #1a1a1a; margin: 0; padding: 0; }'
+    + 'h1 { font-size: 22pt; font-weight: bold; color: #111; margin: 0 0 18px 0; line-height: 1.3; }'
+    + 'h2 { font-size: 15pt; font-weight: bold; color: #222; margin: 30px 0 10px 0; line-height: 1.3; border-bottom: 1px solid #ddd; padding-bottom: 5px; }'
+    + 'h3 { font-size: 12pt; font-weight: bold; color: #333; margin: 22px 0 8px 0; line-height: 1.3; }'
+    + 'p { margin: 0 0 10px 0; text-align: justify; }'
+    + 'ul { margin: 8px 0 14px 20px; padding-left: 10px; }'
+    + 'li { margin-bottom: 5px; }'
+    + 'hr { border: none; border-top: 1px solid #ccc; margin: 28px 0; }'
+    + 'strong { font-weight: bold; }'
+    + 'em { font-style: italic; }'
+    + '</style></head><body>'
+    + htmlContent
+    + '</body></html>';
+}
+
+function downloadPdfArticle() {
+  if (!state.result) return;
+  var title = document.getElementById("inp-title").value || "Article";
+  var pdfHTML = buildPdfHTML(state.result.article, title);
+
+  var printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    showError("Pop-up blocked. Please allow pop-ups for this site to download PDF.");
+    return;
+  }
+  printWindow.document.write(pdfHTML);
+  printWindow.document.close();
+  setTimeout(function() {
+    printWindow.print();
+  }, 500);
+}
+
+function downloadPdfFromHistory(id) {
+  var entry = state.history.find(function(h) { return h.id === id; });
+  if (!entry) return;
+  var pdfHTML = buildPdfHTML(entry.article, entry.title);
+
+  var printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    showError("Pop-up blocked. Please allow pop-ups for this site to download PDF.");
+    return;
+  }
+  printWindow.document.write(pdfHTML);
+  printWindow.document.close();
+  setTimeout(function() {
+    printWindow.print();
+  }, 500);
+}
+
+function deleteFromHistory(id) {
+  state.history = state.history.filter(h => h.id !== id);
+  saveHistory();
+  renderHistory();
+}
+
+function clearAllHistory() {
+  state.history = [];
+  saveHistory();
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORM HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function loadExample() {
+  document.getElementById("inp-topic").value = EXAMPLE.topic;
+  document.getElementById("inp-title").value = EXAMPLE.article_title;
+  document.getElementById("inp-h1words").value = 130;
+  document.getElementById("inp-audience").value = EXAMPLE.target_audience;
+  document.getElementById("inp-intent").value = EXAMPLE.search_intent;
+  document.getElementById("inp-brief").value = EXAMPLE.content_brief;
+  state.outline = EXAMPLE.outline.map(s => ({
+    ...s, id: uid(),
+    subtopics: s.subtopics.map(st => ({ ...st, id: uid() })),
+  }));
+  renderOutline();
+}
+
+function clearForm() {
+  document.getElementById("inp-topic").value = "";
+  document.getElementById("inp-title").value = "";
+  document.getElementById("inp-h1words").value = 130;
+  document.getElementById("inp-audience").value = "";
+  document.getElementById("inp-intent").value = "";
+  document.getElementById("inp-brief").value = "";
+  state.outline = [{ id: uid(), section_heading: "", h2_word_target: 400, subtopics: [] }];
+  renderOutline();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OUTLINE AI GENERATOR
+// ═══════════════════════════════════════════════════════════════
+
+let generatedOutlineData = null;
+
+async function generateOutline() {
+  hideError();
+  const keyword = document.getElementById("oi-keyword").value.trim();
+  if (!keyword) { showError("Target keyword is required"); return; }
+
+  const location = document.getElementById("oi-location").value.trim() || "Global";
+  const persona = document.getElementById("oi-persona").value.trim() || "General audience";
+  var instructions = document.getElementById("oi-instructions").value.trim();
+
+  var btn = document.getElementById("genOutlineBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating outline...';
+  document.getElementById("outlinePreviewArea").style.display = "none";
+
+  var prompt = "You are an expert SEO content strategist. Generate a detailed article outline as a JSON object.\n\n";
+  prompt += "INPUTS:\n";
+  prompt += "- Keyword: " + keyword + "\n";
+  prompt += "- Location: " + location + "\n";
+  prompt += "- Audience: " + persona + "\n";
+  if (instructions) {
+    prompt += "\nADDITIONAL INSTRUCTIONS (YOU MUST STRICTLY FOLLOW ALL OF THESE):\n" + instructions + "\n";
+  }
+  prompt += '\nRespond with ONLY valid JSON. No markdown, no backticks, no text before or after the JSON.\n\n';
+  prompt += '{"article_title":"...","topic":"...","target_audience":"...","content_brief":"...","outline":[{"section_heading":"...","h2_word_target":130,"h2_intent":"Define","h2_format":"...","h2_covers":["..."],"h2_does_not_cover":["..."],"subtopics":[{"heading":"...","word_target":110}]}]}\n\n';
+  prompt += "RULES:\n";
+  prompt += "- 5-10 H2 sections based on topic depth\n";
+  prompt += "- h2_intent: one of Define, Quantify, Explain, Compare, Guide, Validate\n";
+  prompt += "- h2_format: specific format for the H2 intro\n";
+  prompt += "- h2_covers: 3-6 real search queries this section answers\n";
+  prompt += "- h2_does_not_cover: 2-4 excluded topics with where they belong\n";
+  prompt += "- h2_word_target: words for H2 intro only (100-200w)\n";
+  prompt += "- Each H3 word_target: 75-200w. H3s are optional per section.\n";
+  prompt += "- Grand total of all word targets should be 3000-6000w unless specified otherwise in additional instructions\n";
+  prompt += "- Headings must be specific and SEO-friendly\n";
+  prompt += "- No generic intro/conclusion sections\n";
+  if (instructions) {
+    prompt += "- CRITICAL: The additional instructions above are MANDATORY. Follow every single instruction exactly as written. If they specify word count, section count, specific topics, tone, structure, or any other requirement - you MUST incorporate them.\n";
+  }
+  prompt += "- Return ONLY the JSON object";
+  prompt = sanitize(prompt);
+
+  try {
+    var text = await callClaude(prompt, { maxTokens: 4096 });
+
+    var clean = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    var data;
+    try {
+      data = JSON.parse(clean);
+    } catch(e) {
+      var match = clean.match(/\{[\s\S]*\}/);
+      if (match) data = JSON.parse(match[0]);
+      else throw new Error("Could not parse JSON from response. Try again.");
+    }
+
+    generatedOutlineData = data;
+
+    if (!data.outline || !Array.isArray(data.outline) || data.outline.length === 0) {
+      throw new Error("No outline sections found in response. Try again.");
+    }
+
+    // Render preview
+    const previewEl = document.getElementById("outlinePreview");
+    let preview = "";
+    preview += `TITLE: ${data.article_title}\n`;
+    preview += `TOPIC: ${data.topic}\n`;
+    preview += `AUDIENCE: ${data.target_audience}\n`;
+    preview += `BRIEF: ${data.content_brief}\n`;
+
+    const sep = "─".repeat(50);
+    preview += `\n${sep}\nOUTLINE (${data.outline.length} sections):\n`;
+
+    let grandTotal = 0;
+    data.outline.forEach((sec, i) => {
+      const h3Total = (sec.subtopics || []).reduce((s, st) => s + (st.word_target || 0), 0);
+      const secW = (sec.h2_word_target || 0) + h3Total;
+      grandTotal += secW;
+
+      preview += `\n${sep}\n`;
+      preview += `H2: ${sec.section_heading}\n`;
+      preview += `[INTENT: ${sec.h2_intent || "-"} | H2: ${sec.h2_word_target}w | TOTAL: ${secW}w]\n`;
+      if (sec.h2_format) preview += `[FORMAT: ${sec.h2_format}]\n`;
+      if (sec.h2_covers?.length) preview += `[COVERS: ${sec.h2_covers.join(", ")}]\n`;
+      if (sec.h2_does_not_cover?.length) preview += `[EXCLUDES: ${sec.h2_does_not_cover.join(" | ")}]\n`;
+
+      if (sec.subtopics?.length) {
+        sec.subtopics.forEach((st) => {
+          preview += `  H3: ${st.heading}  [${st.word_target}w]\n`;
+        });
+      } else {
+        preview += `  (paragraph only — no H3s)\n`;
+      }
+    });
+    preview += `\n${sep}\nGRAND TOTAL: ~${grandTotal.toLocaleString()} words across ${data.outline.length} sections`;
+
+    previewEl.textContent = preview;
+    document.getElementById("outlinePreviewArea").style.display = "block";
+
+  } catch(err) {
+    console.error("Outline generation error:", err);
+    showError("Outline generation failed: " + (err.message || String(err)));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Generate Outline";
+  }
+}
+
+function applyOutline() {
+  if (!generatedOutlineData) return;
+  var d = generatedOutlineData;
+
+  // Fill configure fields
+  document.getElementById("inp-topic").value = d.topic || "";
+  document.getElementById("inp-title").value = d.article_title || "";
+  document.getElementById("inp-h1words").value = d.h1_word_target || 130;
+  document.getElementById("inp-audience").value = d.target_audience || "";
+  var persona = document.getElementById("oi-persona").value.trim();
+  var topicStr = d.topic || "this topic";
+  document.getElementById("inp-intent").value = persona
+    ? "Comprehensive guide for " + persona + " on " + topicStr
+    : "Comprehensive guide on " + topicStr;
+  document.getElementById("inp-brief").value = d.content_brief || "";
+
+  // Build outline
+  state.outline = (d.outline || []).map(sec => ({
+    id: uid(),
+    section_heading: sec.section_heading || "",
+    h2_word_target: sec.h2_word_target || 100,
+    subtopics: (sec.subtopics || []).map(st => ({
+      id: uid(),
+      heading: st.heading || "",
+      word_target: st.word_target || 75,
+    })),
+  }));
+
+  renderOutline();
+  switchView("configure");
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+loadSavedKey();
+loadHistory();
+// Start with empty outline on configure tab (user can load example or use Outline AI)
+state.outline = [{ id: uid(), section_heading: "", h2_word_target: 400, subtopics: [] }];
+renderOutline();
+switchView("outline-ai");
+</script>
+</body>
+</html>
